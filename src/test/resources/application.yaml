@@ -1,0 +1,5 @@
+camunda:
+  config:
+    jobExecutorActivate: true
+    defaultNumberOfRetries: 10
+    processEngineName: customEngineYaml
