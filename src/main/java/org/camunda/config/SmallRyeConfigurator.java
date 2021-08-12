@@ -50,15 +50,15 @@ public class SmallRyeConfigurator {
     List<ConfigSource> configSources = new ArrayList<>();
     if (url != null) {
       String configType = determineFileType(url);
-      String configSource;
+      String configSourceContent;
       if (Paths.get(url).isAbsolute()) {
-        configSource = readFileFromFilesystem(url);
+        configSourceContent = readFileFromFilesystem(url);
       } else if (isUrlValid(url)) {
-        configSource = readFileFromUrl(url);
+        configSourceContent = readFileFromUrl(url);
       } else {
-        configSource = readFileFromClasspath(url);
+        configSourceContent = readFileFromClasspath(url);
       }
-      ConfigSource customSource = SmallRyeConfigurator.provideConfigSource(configSource, configType);
+      ConfigSource customSource = SmallRyeConfigurator.provideConfigSource(configSourceContent, configType);
       if (customSource != null) {
         configSources.add(customSource);
       }
