@@ -18,17 +18,17 @@ package org.camunda.config;
 
 import java.io.IOException;
 
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import org.camunda.bpm.container.impl.metadata.PropertyHelper;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.cfg.ProcessEnginePlugin;
-import org.camunda.config.gitsource.GitConfigRepo;
 
 public class CamundaMicroprofileConfigPlugin implements ProcessEnginePlugin {
 
   protected String configFilePath;
-  protected GitConfigRepo gitConfigRepo;
 
   public CamundaMicroprofileConfigPlugin() {
     this(null);
@@ -40,6 +40,15 @@ public class CamundaMicroprofileConfigPlugin implements ProcessEnginePlugin {
 
   @Override
   public void preInit(ProcessEngineConfigurationImpl processEngineConfiguration) {
+
+    if (configFilePath == null) {
+      ConfigValue configValue = new SmallRyeConfigBuilder()
+          .addDefaultSources()
+          .build()
+          .getConfigValue("cambpm_conf_path");
+
+      this.configFilePath = configValue.getValue();
+    }
 
     try {
       SmallRyeConfig smallRyeConfig = SmallRyeConfigurator.provideSmallRyeConfig(configFilePath);
@@ -63,4 +72,13 @@ public class CamundaMicroprofileConfigPlugin implements ProcessEnginePlugin {
   public void postProcessEngineBuild(ProcessEngine processEngine) {
     // no op
   }
+
+  public String getConfigFilePath() {
+    return configFilePath;
+  }
+
+  public void setConfigFilePath(String configFilePath) {
+    this.configFilePath = configFilePath;
+  }
+
 }

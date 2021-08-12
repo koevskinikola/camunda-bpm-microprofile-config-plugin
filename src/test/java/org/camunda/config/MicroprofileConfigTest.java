@@ -18,7 +18,6 @@ package org.camunda.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -30,7 +29,6 @@ import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.cfg.ProcessEnginePlugin;
 import org.camunda.bpm.engine.impl.cfg.StandaloneInMemProcessEngineConfiguration;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -40,46 +38,48 @@ public class MicroprofileConfigTest {
 
   @AfterEach
   protected void cleanUp() {
-    processEngine.close();
+    if (processEngine != null) {
+      processEngine.close();
+    }
   }
 
   @Test
   public void shouldLoadCustomPropertiesConfigFileFromClasspath() {
     // given
     ProcessEngineConfigurationImpl configuration
-        = setupProcessEngineConfiguration("application.properties");
+        = ConfigTestHelper.setupProcessEngineConfiguration("application.properties");
 
     // when
     processEngine = configuration.buildProcessEngine();
 
     // then
-    assertValues(processEngine, true, 9, "customEngine");
+    ConfigTestHelper.assertValues(processEngine, true, 9, "customEngine");
   }
 
   @Test
   public void shouldLoadCustomYamlConfigFileFromClasspath() {
     // given
     ProcessEngineConfigurationImpl configuration
-        = setupProcessEngineConfiguration("application.yaml");
+        = ConfigTestHelper.setupProcessEngineConfiguration("application.yaml");
 
     // when
     processEngine = configuration.buildProcessEngine();
 
     // then
-    assertValues(processEngine, true, 10, "customEngineYaml");
+    ConfigTestHelper.assertValues(processEngine, true, 10, "customEngineYaml");
   }
 
   @Test
   public void shouldLoadYamlConfigFileFromClasspath() {
     // given
     ProcessEngineConfigurationImpl configuration
-        = setupProcessEngineConfiguration(null);
+        = ConfigTestHelper.setupProcessEngineConfiguration(null);
 
     // when
     processEngine = configuration.buildProcessEngine();
 
     // then
-    assertValues(processEngine, true, 10, "customEngineYaml");
+    ConfigTestHelper.assertValues(processEngine, true, 10, "customEngineYaml");
   }
 
   @Test
@@ -88,13 +88,13 @@ public class MicroprofileConfigTest {
     String fileName = "application.properties";
     createTmpFile(tempDir.toString() + "/", fileName);
     ProcessEngineConfigurationImpl configuration
-        = setupProcessEngineConfiguration(tempDir.toString() + "/" + fileName);
+        = ConfigTestHelper.setupProcessEngineConfiguration(tempDir.toString() + "/" + fileName);
 
     // when
     processEngine = configuration.buildProcessEngine();
 
     // then
-    assertValues(processEngine, true, 9, "customEngine");
+    ConfigTestHelper.assertValues(processEngine, true, 9, "customEngine");
   }
 
   @Test
@@ -103,13 +103,13 @@ public class MicroprofileConfigTest {
     String fileName = "application.properties";
     createTmpFile(tempDir.toString() + "/", fileName);
     ProcessEngineConfigurationImpl configuration
-        = setupProcessEngineConfiguration("file://" + tempDir.toString() + "/" + fileName);
+        = ConfigTestHelper.setupProcessEngineConfiguration("file://" + tempDir.toString() + "/" + fileName);
 
     // when
     processEngine = configuration.buildProcessEngine();
 
     // then
-    assertValues(processEngine, true, 9, "customEngine");
+    ConfigTestHelper.assertValues(processEngine, true, 9, "customEngine");
   }
 
   @Test
@@ -117,26 +117,13 @@ public class MicroprofileConfigTest {
     // given
     String gitUrl = "https://github.com/koevskinikola/cambpm-test-config.git";
     ProcessEngineConfigurationImpl configuration
-        = setupProcessEngineConfiguration(gitUrl);
+        = ConfigTestHelper.setupProcessEngineConfiguration(gitUrl);
 
     // when
     processEngine = configuration.buildProcessEngine();
 
     // then
-    assertValues(processEngine, true, 9, "customEngine");
-  }
-
-  protected ProcessEngineConfigurationImpl setupProcessEngineConfiguration(String configUrl) {
-    StandaloneInMemProcessEngineConfiguration configuration
-        = new StandaloneInMemProcessEngineConfiguration();
-
-    List<ProcessEnginePlugin> plugins = configuration.getProcessEnginePlugins();
-    plugins = (plugins == null)? Collections.emptyList() : plugins;
-
-    plugins.add(new CamundaMicroprofileConfigPlugin(configUrl));
-    configuration.setProcessEnginePlugins(plugins);
-
-    return configuration;
+    ConfigTestHelper.assertValues(processEngine, true, 9, "customEngine");
   }
 
   protected void createTmpFile(String filePath, String fileName) throws IOException {
@@ -145,15 +132,4 @@ public class MicroprofileConfigTest {
     }
   }
 
-  protected void assertValues(ProcessEngine processEngine,
-                              boolean jobExecutorActive,
-                              int defaultRetryNumber,
-                              String engineName) {
-
-    ProcessEngineConfigurationImpl configuration
-        = (ProcessEngineConfigurationImpl) processEngine.getProcessEngineConfiguration();
-    assertThat(configuration.isJobExecutorActivate()).isEqualTo(jobExecutorActive);
-    assertThat(configuration.getDefaultNumberOfRetries()).isEqualTo(defaultRetryNumber);
-    assertThat(configuration.getProcessEngineName()).isEqualTo(engineName);
-  }
 }

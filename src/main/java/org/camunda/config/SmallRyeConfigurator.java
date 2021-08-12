@@ -76,10 +76,14 @@ public class SmallRyeConfigurator {
     }
 
     URL propsUrl = SmallRyeConfigurator.class.getResource(DEFAULT_PROPS_FILE);
-    URL yamlUrl = SmallRyeConfigurator.class.getResource(DEFAULT_YAML_FILE);
+    if (resourceExists(propsUrl)) {
+      configSources.add(new PropertiesConfigSource(propsUrl, 500));
+    }
 
-    configSources.add(new PropertiesConfigSource(propsUrl, 500));
-    configSources.add(new YamlConfigSource(yamlUrl, 600));
+    URL yamlUrl = SmallRyeConfigurator.class.getResource(DEFAULT_YAML_FILE);
+    if (resourceExists(yamlUrl)) {
+      configSources.add(new YamlConfigSource(yamlUrl, 600));
+    }
 
     SmallRyeConfig smallRyeConfig = new SmallRyeConfigBuilder()
         .addDefaultSources()
@@ -183,4 +187,13 @@ public class SmallRyeConfigurator {
     return true;
   }
 
+  public static boolean resourceExists(URL url) {
+    try {
+      url.toURI();
+    } catch (Exception ex) {
+      return false;
+    }
+
+    return true;
+  }
 }
