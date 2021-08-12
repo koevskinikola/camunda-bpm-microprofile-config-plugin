@@ -18,6 +18,10 @@ package org.camunda.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
@@ -26,7 +30,9 @@ import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.cfg.ProcessEnginePlugin;
 import org.camunda.bpm.engine.impl.cfg.StandaloneInMemProcessEngineConfiguration;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class MicroprofileConfigTest {
 
@@ -38,23 +44,33 @@ public class MicroprofileConfigTest {
   }
 
   @Test
-  public void shouldLoadPropertiesConfigFile() {
+  public void shouldLoadCustomPropertiesConfigFileFromClasspath() {
     // given
     ProcessEngineConfigurationImpl configuration
-        = setupProcessEngineConfiguration("/application.properties");
+        = setupProcessEngineConfiguration("application.properties");
 
     // when
     processEngine = configuration.buildProcessEngine();
 
     // then
-    configuration = (ProcessEngineConfigurationImpl) processEngine.getProcessEngineConfiguration();
-    assertThat(configuration.isJobExecutorActivate()).isTrue();
-    assertThat(configuration.getDefaultNumberOfRetries()).isEqualTo(9);
-    assertThat(configuration.getProcessEngineName()).isEqualTo("customEngine");
+    assertValues(processEngine, true, 9, "customEngine");
   }
 
   @Test
-  public void shouldLoadYamlConfigFile() {
+  public void shouldLoadCustomYamlConfigFileFromClasspath() {
+    // given
+    ProcessEngineConfigurationImpl configuration
+        = setupProcessEngineConfiguration("application.yaml");
+
+    // when
+    processEngine = configuration.buildProcessEngine();
+
+    // then
+    assertValues(processEngine, true, 10, "customEngineYaml");
+  }
+
+  @Test
+  public void shouldLoadYamlConfigFileFromClasspath() {
     // given
     ProcessEngineConfigurationImpl configuration
         = setupProcessEngineConfiguration(null);
@@ -63,10 +79,37 @@ public class MicroprofileConfigTest {
     processEngine = configuration.buildProcessEngine();
 
     // then
-    configuration = (ProcessEngineConfigurationImpl) processEngine.getProcessEngineConfiguration();
-    assertThat(configuration.isJobExecutorActivate()).isTrue();
-    assertThat(configuration.getDefaultNumberOfRetries()).isEqualTo(10);
-    assertThat(configuration.getProcessEngineName()).isEqualTo("customEngineYaml");
+    assertValues(processEngine, true, 10, "customEngineYaml");
+  }
+
+  @Test
+  public void shouldLoadPropertiesConfigFileFromFilesystem(@TempDir Path tempDir) throws IOException {
+    // given
+    String fileName = "application.properties";
+    createTmpFile(tempDir.toString() + "/", fileName);
+    ProcessEngineConfigurationImpl configuration
+        = setupProcessEngineConfiguration(tempDir.toString() + "/" + fileName);
+
+    // when
+    processEngine = configuration.buildProcessEngine();
+
+    // then
+    assertValues(processEngine, true, 9, "customEngine");
+  }
+
+  @Test
+  public void shouldLoadPropertiesConfigFileFromUrl(@TempDir Path tempDir) throws IOException {
+    // given
+    String fileName = "application.properties";
+    createTmpFile(tempDir.toString() + "/", fileName);
+    ProcessEngineConfigurationImpl configuration
+        = setupProcessEngineConfiguration("file://" + tempDir.toString() + "/" + fileName);
+
+    // when
+    processEngine = configuration.buildProcessEngine();
+
+    // then
+    assertValues(processEngine, true, 9, "customEngine");
   }
 
   protected ProcessEngineConfigurationImpl setupProcessEngineConfiguration(String configUrl) {
@@ -80,5 +123,23 @@ public class MicroprofileConfigTest {
     configuration.setProcessEnginePlugins(plugins);
 
     return configuration;
+  }
+
+  protected void createTmpFile(String filePath, String fileName) throws IOException {
+    try (FileWriter configFile = new FileWriter(filePath + fileName)){
+      configFile.write(SmallRyeConfigurator.readFileFromClasspath(fileName));
+    }
+  }
+
+  protected void assertValues(ProcessEngine processEngine,
+                              boolean jobExecutorActive,
+                              int defaultRetryNumber,
+                              String engineName) {
+
+    ProcessEngineConfigurationImpl configuration
+        = (ProcessEngineConfigurationImpl) processEngine.getProcessEngineConfiguration();
+    assertThat(configuration.isJobExecutorActivate()).isEqualTo(jobExecutorActive);
+    assertThat(configuration.getDefaultNumberOfRetries()).isEqualTo(defaultRetryNumber);
+    assertThat(configuration.getProcessEngineName()).isEqualTo(engineName);
   }
 }

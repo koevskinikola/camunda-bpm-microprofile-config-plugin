@@ -12,7 +12,7 @@
     <version.camunda>7.16.0-SNAPSHOT</version.camunda>
     <version.smallrye>2.4.2</version.smallrye>
     <version.apache.commons.beanutils>1.9.4</version.apache.commons.beanutils>
-    <version.junit>5.1.0</version.junit>
+    <version.junit>5.4.2</version.junit>
     <version.assertj>3.20.2</version.assertj>
     <version.h2>1.4.199</version.h2>
 
@@ -63,6 +63,13 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
+      <version>${version.junit}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
       <version>${version.junit}</version>
       <scope>test</scope>
     </dependency>

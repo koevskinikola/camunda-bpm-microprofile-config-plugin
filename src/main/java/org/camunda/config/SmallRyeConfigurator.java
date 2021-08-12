@@ -16,14 +16,25 @@
  */
 package org.camunda.config;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.common.utils.ConfigSourceUtil;
 import io.smallrye.config.source.yaml.YamlConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
@@ -37,7 +48,16 @@ public class SmallRyeConfigurator {
   public static SmallRyeConfig provideSmallRyeConfig(String url) throws IOException {
     List<ConfigSource> configSources = new ArrayList<>();
     if (url != null) {
-      ConfigSource customSource = SmallRyeConfigurator.provideConfigSource(url);
+      String configType = determineFileType(url);
+      String configSource;
+      if (Paths.get(url).isAbsolute()) {
+        configSource = readFileFromFilesystem(url);
+      } else if (isUrlValid(url)) {
+        configSource = readFileFromUrl(url);
+      } else {
+        configSource = readFileFromClasspath(url);
+      }
+      ConfigSource customSource = SmallRyeConfigurator.provideConfigSource(configSource, configType);
       if (customSource != null) {
         configSources.add(customSource);
       }
@@ -58,14 +78,14 @@ public class SmallRyeConfigurator {
     return smallRyeConfig;
   }
 
-  public static ConfigSource provideConfigSource(String url) {
-    String configType = determingFileType(url);
+  public static ConfigSource provideConfigSource(String configContent, String configType) {
     try {
-      URL configFile = SmallRyeConfigurator.class.getResource(url);
       if (YAML.equals(configType)) {
-        return new YamlConfigSource(configFile, 700);
+        return new YamlConfigSource("externalConfig", configContent, 700);
       } else {
-        return new PropertiesConfigSource(configFile, 700);
+        Properties properties = new Properties();
+        properties.load(new StringReader(configContent));
+        return new PropertiesConfigSource(ConfigSourceUtil.propertiesToMap(properties), "externalConfig", 700);
       }
     } catch (IOException e) {
       // TODO: add logging for missing file
@@ -75,7 +95,7 @@ public class SmallRyeConfigurator {
     return null;
   }
 
-  protected static String determingFileType(String url) {
+  protected static String determineFileType(String url) {
     String[] urlSegments = url.split("\\.");
     String fileType = urlSegments[urlSegments.length-1];
     if (fileType.equals("yaml") ||fileType.equals("yml")) {
@@ -85,6 +105,68 @@ public class SmallRyeConfigurator {
     } else {
       throw new RuntimeException("Please provide a correct configuration file");
     }
+  }
+
+  protected static String readFileFromClasspath(String classPath) {
+    ClassLoader classLoader = SmallRyeConfigurator.class.getClassLoader();
+    InputStream inputStream = classLoader.getResourceAsStream(classPath);
+    String data = readFromInputStream(inputStream);
+    return data;
+  }
+
+  protected static String readFileFromFilesystem(String path) {
+    String data = "";
+    byte[] encoded;
+    try {
+      encoded = Files.readAllBytes(Paths.get(path));
+      data = new String(encoded, StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    return data;
+  }
+
+  protected static String readFileFromUrl(String url) {
+    URL configFile = null;
+    String data = "";
+    try {
+      configFile = new URL(url);
+      URLConnection urlConnection = configFile.openConnection();
+      InputStream inputStream = urlConnection.getInputStream();
+      data = readFromInputStream(inputStream);
+    } catch (MalformedURLException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    return data;
+  }
+
+  protected static String readFromInputStream(InputStream inputStream) {
+    StringBuilder resultStringBuilder = new StringBuilder();
+    try (BufferedReader br
+             = new BufferedReader(new InputStreamReader(inputStream))) {
+      String line;
+      while ((line = br.readLine()) != null) {
+        resultStringBuilder.append(line).append("\n");
+      }
+    } catch (IOException e) {
+      // TODO: add logging
+      e.printStackTrace();
+    }
+    return resultStringBuilder.toString();
+  }
+
+  protected static boolean isUrlValid(String url) {
+    try {
+      new URL(url);
+    } catch (MalformedURLException e) {
+      return false;
+    }
+
+    return true;
   }
 
 }
