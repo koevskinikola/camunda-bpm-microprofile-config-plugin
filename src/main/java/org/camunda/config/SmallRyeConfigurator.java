@@ -42,8 +42,9 @@ public class SmallRyeConfigurator {
 
   protected static final String DEFAULT_PROPS_FILE = "/application.properties";
   protected static final String DEFAULT_YAML_FILE = "/application.yaml";
-  protected static final String YAML = "yaml";
-  protected static final String PROPS = "properties";
+  public static final String YAML = "yaml";
+  public static final String PROPS = "properties";
+  public static final String GIT = "git";
 
   public static SmallRyeConfig provideSmallRyeConfig(String url) throws IOException {
     List<ConfigSource> configSources = new ArrayList<>();
@@ -95,13 +96,15 @@ public class SmallRyeConfigurator {
     return null;
   }
 
-  protected static String determineFileType(String url) {
+  public static String determineFileType(String url) {
     String[] urlSegments = url.split("\\.");
     String fileType = urlSegments[urlSegments.length-1];
     if (fileType.equals("yaml") ||fileType.equals("yml")) {
       return YAML;
     } else if (fileType.equals("properties")) {
       return PROPS;
+    } else if (fileType.equals("git")) {
+      return GIT;
     } else {
       throw new RuntimeException("Please provide a correct configuration file");
     }

@@ -112,6 +112,20 @@ public class MicroprofileConfigTest {
     assertValues(processEngine, true, 9, "customEngine");
   }
 
+  @Test
+  public void shouldLoadPropertiesConfigFileFromGitRepo() {
+    // given
+    String gitUrl = "https://github.com/koevskinikola/cambpm-test-config.git";
+    ProcessEngineConfigurationImpl configuration
+        = setupProcessEngineConfiguration(gitUrl);
+
+    // when
+    processEngine = configuration.buildProcessEngine();
+
+    // then
+    assertValues(processEngine, true, 9, "customEngine");
+  }
+
   protected ProcessEngineConfigurationImpl setupProcessEngineConfiguration(String configUrl) {
     StandaloneInMemProcessEngineConfiguration configuration
         = new StandaloneInMemProcessEngineConfiguration();

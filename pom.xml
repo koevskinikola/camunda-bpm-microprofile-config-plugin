@@ -15,6 +15,7 @@
     <version.junit>5.4.2</version.junit>
     <version.assertj>3.20.2</version.assertj>
     <version.h2>1.4.199</version.h2>
+    <version.jgit>5.12.0.202106070339-r</version.jgit>
 
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
@@ -57,6 +58,14 @@
       <groupId>io.smallrye.config</groupId>
       <artifactId>smallrye-config-source-yaml</artifactId>
       <version>${version.smallrye}</version>
+    </dependency>
+
+    <!-- other dependencies -->
+    <!-- JGit is under the EDL license -->
+    <dependency>
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit</artifactId>
+      <version>${version.jgit}</version>
     </dependency>
 
     <!-- Test dependencies -->

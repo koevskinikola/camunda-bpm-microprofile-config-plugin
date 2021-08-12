@@ -23,10 +23,12 @@ import org.camunda.bpm.container.impl.metadata.PropertyHelper;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.cfg.ProcessEnginePlugin;
+import org.camunda.config.gitsource.GitConfigRepo;
 
 public class CamundaMicroprofileConfigPlugin implements ProcessEnginePlugin {
 
   protected String configFilePath;
+  protected GitConfigRepo gitConfigRepo;
 
   public CamundaMicroprofileConfigPlugin() {
     this(null);
@@ -34,6 +36,11 @@ public class CamundaMicroprofileConfigPlugin implements ProcessEnginePlugin {
 
   public CamundaMicroprofileConfigPlugin(String configFilePath) {
     this.configFilePath = configFilePath;
+    if (configFilePath != null && SmallRyeConfigurator.determineFileType(configFilePath).equals(SmallRyeConfigurator.GIT)) {
+      this.gitConfigRepo = new GitConfigRepo(configFilePath);
+      this.gitConfigRepo.cloneRepository();
+      this.configFilePath = gitConfigRepo.getLocalGitDirectory() + gitConfigRepo.getConfigFilePath();
+    }
   }
 
   @Override
