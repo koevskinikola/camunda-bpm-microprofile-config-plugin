@@ -36,11 +36,6 @@ public class CamundaMicroprofileConfigPlugin implements ProcessEnginePlugin {
 
   public CamundaMicroprofileConfigPlugin(String configFilePath) {
     this.configFilePath = configFilePath;
-    if (configFilePath != null && SmallRyeConfigurator.determineFileType(configFilePath).equals(SmallRyeConfigurator.GIT)) {
-      this.gitConfigRepo = new GitConfigRepo(configFilePath);
-      this.gitConfigRepo.cloneRepository();
-      this.configFilePath = gitConfigRepo.getLocalGitDirectory() + gitConfigRepo.getConfigFilePath();
-    }
   }
 
   @Override

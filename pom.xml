@@ -42,10 +42,11 @@
       <scope>provided</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.camunda.commons</groupId>
-      <artifactId>camunda-commons-logging</artifactId>
-    </dependency>
+    <!-- TODO: add logging -->
+<!--    <dependency>-->
+<!--      <groupId>org.camunda.commons</groupId>-->
+<!--      <artifactId>camunda-commons-logging</artifactId>-->
+<!--    </dependency>-->
 
     <!-- MicroProfile/SmallRye dependencies -->
     <dependency>

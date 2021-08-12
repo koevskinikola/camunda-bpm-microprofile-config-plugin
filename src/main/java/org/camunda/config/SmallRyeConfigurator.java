@@ -31,37 +31,48 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.common.utils.ConfigSourceUtil;
 import io.smallrye.config.source.yaml.YamlConfigSource;
+import org.camunda.config.gitsource.GitConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 public class SmallRyeConfigurator {
 
   protected static final String DEFAULT_PROPS_FILE = "/application.properties";
   protected static final String DEFAULT_YAML_FILE = "/application.yaml";
+  protected static final int DEFAULT_CUSTOM_CONFIG_ORDINAL = 700;
+
   public static final String YAML = "yaml";
   public static final String PROPS = "properties";
   public static final String GIT = "git";
 
   public static SmallRyeConfig provideSmallRyeConfig(String url) throws IOException {
     List<ConfigSource> configSources = new ArrayList<>();
+    ConfigSource customSource = null;
     if (url != null) {
-      String configType = determineFileType(url);
-      String configSourceContent;
-      if (Paths.get(url).isAbsolute()) {
-        configSourceContent = readFileFromFilesystem(url);
-      } else if (isUrlValid(url)) {
-        configSourceContent = readFileFromUrl(url);
-      } else {
-        configSourceContent = readFileFromClasspath(url);
+      String resourceType = determineFileType(url);
+      if (!GIT.equals(resourceType)) {
+        String configSourceContent;
+        if (Paths.get(url).isAbsolute()) {
+          configSourceContent = readFileFromFilesystem(url);
+        } else if (isUrlValid(url)) {
+          configSourceContent = readFileFromUrl(url);
+        } else {
+          configSourceContent = readFileFromClasspath(url);
+        }
+        customSource = SmallRyeConfigurator.provideConfigSource(configSourceContent, resourceType);
+
+      } else if (GIT.equals(resourceType)) {
+        customSource = new GitConfigSource(url, DEFAULT_CUSTOM_CONFIG_ORDINAL);
       }
-      ConfigSource customSource = SmallRyeConfigurator.provideConfigSource(configSourceContent, configType);
-      if (customSource != null) {
-        configSources.add(customSource);
-      }
+    }
+
+    if (customSource != null) {
+      configSources.add(customSource);
     }
 
     URL propsUrl = SmallRyeConfigurator.class.getResource(DEFAULT_PROPS_FILE);
@@ -82,11 +93,11 @@ public class SmallRyeConfigurator {
   public static ConfigSource provideConfigSource(String configContent, String configType) {
     try {
       if (YAML.equals(configType)) {
-        return new YamlConfigSource("externalConfig", configContent, 700);
+        return new YamlConfigSource("externalConfig", configContent, DEFAULT_CUSTOM_CONFIG_ORDINAL);
       } else {
         Properties properties = new Properties();
         properties.load(new StringReader(configContent));
-        return new PropertiesConfigSource(ConfigSourceUtil.propertiesToMap(properties), "externalConfig", 700);
+        return new PropertiesConfigSource(ConfigSourceUtil.propertiesToMap(properties), "externalConfig", DEFAULT_CUSTOM_CONFIG_ORDINAL);
       }
     } catch (IOException e) {
       // TODO: add logging for missing file
@@ -110,14 +121,14 @@ public class SmallRyeConfigurator {
     }
   }
 
-  protected static String readFileFromClasspath(String classPath) {
+  public static String readFileFromClasspath(String classPath) {
     ClassLoader classLoader = SmallRyeConfigurator.class.getClassLoader();
     InputStream inputStream = classLoader.getResourceAsStream(classPath);
     String data = readFromInputStream(inputStream);
     return data;
   }
 
-  protected static String readFileFromFilesystem(String path) {
+  public static String readFileFromFilesystem(String path) {
     String data = "";
     byte[] encoded;
     try {
@@ -130,7 +141,7 @@ public class SmallRyeConfigurator {
     return data;
   }
 
-  protected static String readFileFromUrl(String url) {
+  public static String readFileFromUrl(String url) {
     URL configFile = null;
     String data = "";
     try {
